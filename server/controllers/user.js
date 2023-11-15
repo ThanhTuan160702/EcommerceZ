@@ -2,6 +2,9 @@ const User = require('../models/user')
 const asyncHandle = require('express-async-handler')
 const {gennerateAccessToken, gennerateRefreshToken} = require('../middlewares/jwt')
 const jwt = require('jsonwebtoken')
+const nodemailer = require('nodemailer')
+const sendMail = require('../untils/sendMail')
+const crypto = require('crypto')
 
 const register = asyncHandle(async(req,res) => {
     const { email , password, firstname, lastname } = req.body
@@ -102,11 +105,55 @@ const logout = asyncHandle(async(req, res)=>{
     })
    }
 })
+//Client gửi email, Server check email có hợp lệ không => gửi mail + link password change token
+const forgotPassword = asyncHandle(async(req, res)=>{
+    const {email} = req.query
+    if(!email) throw new Error('Missing Email')
+    const user = await User.findOne({email})
+    if(!user) throw new Error('User not found')
+    const resetToken = user.createPasswordChangeToken()
+    await user.save()
+
+    const html = `Click vào link để thay đổi mật khẩu của bạn.Link này sẽ hết hạn sau 15 phút <a href=${process.env.URL_SERVER}/api/user/reset-password/${resetToken}>Click here</a>`
+
+    const data = {
+        email,
+        html
+    }
+    const rs = await sendMail(data)
+    return res.status(200).json({
+        success: true,
+        rs
+    })
+})
+
+const resetPassword = asyncHandle(async(req, res) => {
+    const { password, token } = req.body
+    if(!password || !token) throw new Error('Missing password or token')
+    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex')
+    const user = await User.findOne({passwordResetToken, passwordResetExpire: {$gt: Date.now()}})
+    if(!user){
+        throw new Error("Invalid reset token")
+    }else{
+        user.password = password
+        user.passwordResetToken = undefined
+        user.passwordChangeAt = Date.now()
+        user.passwordResetExpire = undefined
+        await user.save()
+        return res.status(200).json({
+            success: user ? true : false,
+            mes: user ? "Update password" : "Something went wrong"
+        })
+    }
+})
+
 
 module.exports = {
     register,
     login,
     getCurrent,
     refreshAccessToken,
-    logout
+    logout,
+    forgotPassword,
+    resetPassword
 }

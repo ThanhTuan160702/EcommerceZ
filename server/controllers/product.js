@@ -28,11 +28,53 @@ const getProduct = asyncHandle(async(req, res)=>{
 })
 
 const getProducts = asyncHandle(async(req, res)=>{
-    const products = await Product.find()
-    return res.status(200).json({
-        success: products ? true : false,
-        mes: products ? products : "Something went wrong"
+    const queries = {...req.query}
+    //Tách các trường đặc biệt ra khỏi query
+    const excludeFields = ['limit','sort','page','fields']
+    excludeFields.forEach(element => delete queries[element])
+    //Format lại các operators cho đúng cú pháp mongoose
+    let queryString = JSON.stringify(queries)
+    queryString = queryString.replace(/\b(gte|gt|lt|lte)\b/g, macthedEl => `$${macthedEl}`)
+    const formatedQueries = JSON.parse(queryString)
+
+
+    //Filtering
+    if(queries?.title) formatedQueries.title = {$regex: queries.title, $options: 'i'}
+    let queryCommand = Product.find(formatedQueries)
+
+    //Sorting
+    if(req.query.sort){
+        const sortBy = req.query.sort.split(',').join(' ')
+        queryCommand = queryCommand.sort(sortBy)
+    }
+
+    //Fields limiting
+    if(req.query.fields){
+        const fields = req.query.fields.split(',').join(' ')
+        queryCommand = queryCommand.select(fields)
+    }
+    //Pagination
+    const page = +req.query.page || 1
+    const limit = +req.query.limit || process.env.LIMIT_PRODUCTS
+    const skip = (page-1)*limit
+    queryCommand.skip(skip).limit(limit)
+
+    //Execute query
+    queryCommand.exec()
+    .then(response => {
+        const counts = Product.find(formatedQueries).countDocuments();
+        return Promise.all([response, counts]);
     })
+    .then(([response, counts]) => {
+        return res.status(200).json({
+            success: response ? true : false,
+            mes: response ? response : "Something went wrong",
+            counts
+        });
+    })
+    .catch(err => {
+        throw new Error(err.message);
+    });
 })
 
 const updateProduct = asyncHandle(async(req, res)=>{
@@ -61,10 +103,42 @@ const deleteProduct = asyncHandle(async(req, res)=>{
     })
 })
 
+const ratings = asyncHandle(async(req, res)=>{
+    const {_id} = req.user
+    const {star, comment, pid} = req.body
+    if(!star || !pid) throw new Error('Missing input')
+    const ratingProduct = await Product.findById(pid)
+    const alreadyRating = ratingProduct?.ratings?.find(el => el.postedBy.toString() === _id)
+    if(alreadyRating){
+        //Update rating
+        // Tìm ra object nào giống với object cần tìm
+        await Product.updateOne({
+            ratings: { $elemMatch: alreadyRating }},
+            {$set: { "ratings.$.star":star, "ratings.$.comment":comment }}
+        ,{new: true})
+    }else{
+        //Add rating
+       await Product.findByIdAndUpdate(pid, { $push: {ratings: {star, comment, postedBy: _id}} },{new: true})
+    }
+
+    const updateProduct = await Product.findById(pid)
+    const ratingCount = updateProduct.ratings.length
+    const sumRating = updateProduct.ratings.reduce((sum, ele)=> sum + +ele.star, 0)
+    updateProduct.totalRatings = Math.round(sumRating * 10 / ratingCount) / 10
+
+    await updateProduct.save()
+
+    return res.status(200).json({
+        success: true,
+        mes: updateProduct
+    })
+})
+
 module.exports = {
     createProduct,
     getProduct,
     getProducts,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    ratings
 }

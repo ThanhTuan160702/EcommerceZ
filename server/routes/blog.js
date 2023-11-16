@@ -7,6 +7,7 @@ router.get('/', verifyAccessToken,isAdmin, ctrls.getBlog)
 router.put('/updateBlog/:bid', verifyAccessToken,isAdmin, ctrls.updateBlog)
 router.delete('/deleteBlog/:bid', verifyAccessToken,isAdmin, ctrls.deleteBlog)
 router.put('/like', verifyAccessToken, ctrls.likeBlog)
+router.put('/dislike', verifyAccessToken, ctrls.dislikeBlog)
 
 
 module.exports = router

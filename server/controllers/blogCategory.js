@@ -2,9 +2,6 @@ const BlogCategory = require('../models/blogCategory')
 const asyncHandle = require('express-async-handler')
 
 const createBlogCategory = asyncHandle(async(req, res)=>{
-    const title = req.body.title
-    const check = await BlogCategory.findOne({title})
-    if(check) throw new Error('Blog category is existed')
     const reponse = await BlogCategory.create(req.body)
     return res.status(200).json({
         success: reponse ? true : false,
@@ -22,9 +19,6 @@ const getBlogCategory = asyncHandle(async(req, res)=>{
 
 
 const updateBlogCategory = asyncHandle(async(req, res)=>{
-    const title = req.body.title
-    const check = await BlogCategory.findOne({title})
-    if(check) throw new Error('Blog category is existed')
     const {bid} = req.params
     const reponse = await BlogCategory.findByIdAndUpdate(bid, req.body, {new: true})
     return res.status(200).json({

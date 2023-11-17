@@ -14,6 +14,7 @@ router.get('/', verifyAccessToken,isAdmin,ctrls.getUsers)
 router.delete('/', verifyAccessToken,isAdmin,ctrls.deleteUser)
 router.put('/updateUser', verifyAccessToken,ctrls.updateUser)
 router.put('/updateUserByAdmin/:uid', verifyAccessToken, isAdmin,ctrls.updateUserByAdmin)
+router.put('/updateaddressuser/:uid', verifyAccessToken,ctrls.updateAddressUser)
 
 module.exports = router
 

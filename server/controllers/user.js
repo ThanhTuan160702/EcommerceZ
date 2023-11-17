@@ -163,7 +163,7 @@ const deleteUser = asyncHandle(async(req, res) => {
     const response = await User.findByIdAndDelete(_id)
     return res.status(200).json({
         success: response ? true : false,
-        deletedUser: response ? "Deleted successfully" : "Something went wrong"
+        mes: response ? "Deleted successfully" : "Something went wrong"
     })
 })
 
@@ -175,7 +175,7 @@ const updateUser = asyncHandle(async(req, res) => {
     const response = await User.findByIdAndUpdate(_id, req.body, {new: true}).select('-password -role -refreshToken')
     return res.status(200).json({
         success: response ? true : false,
-        updatedUser: response ? "Updated successfully" : "Something went wrong"
+        mes: response ? "Updated successfully" : "Something went wrong"
     })
 })
 
@@ -187,7 +187,19 @@ const updateUserByAdmin = asyncHandle(async(req, res) => {
     const response = await User.findByIdAndUpdate(uid, req.body, {new: true}).select('-password -role -refreshToken')
     return res.status(200).json({
         success: response ? true : false,
-        updatedUser: response ? "Updated successfully" : "Something went wrong"
+        mes: response ? "Updated successfully" : "Something went wrong"
+    })
+})
+
+const updateAddressUser = asyncHandle(async(req, res) => {
+    const { _id } = req.user
+    if(!req.body.address){
+        throw new Error('Missing Input')
+    }
+    const response = await User.findByIdAndUpdate(_id, {$push : {address: req.body.address}}, {new: true})
+    return res.status(200).json({
+        success: response ? true : false,
+        mes: response ? "Updated successfully" : "Something went wrong"
     })
 })
 
@@ -202,5 +214,6 @@ module.exports = {
     getUsers,
     deleteUser,
     updateUser,
-    updateUserByAdmin
+    updateUserByAdmin,
+    updateAddressUser
 }

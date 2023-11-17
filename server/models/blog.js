@@ -32,7 +32,7 @@ var blogSchema = new mongoose.Schema({
     ],
     image:{
         type: String,
-        default: 'https://img.freepik.com/premium-photo/working-desk-background_115919-23105.jpg?size=626&ext=jpg&ga=GA1.1.386372595.1697673600&semt=ais'
+        required:true
     },
     author:{
         type: String,

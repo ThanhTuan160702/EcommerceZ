@@ -13,7 +13,7 @@ const createBlog = asyncHandle(async(req, res)=>{
     })
 })
 
-const getBlog = asyncHandle(async(req, res)=>{
+const getBlogs = asyncHandle(async(req, res)=>{
     const reponse = await Blog.find()
     return res.status(200).json({
         success: reponse ? true : false,
@@ -41,7 +41,7 @@ const deleteBlog = asyncHandle(async(req, res)=>{
 
 const likeBlog = asyncHandle(async(req, res)=>{
     const {_id} = req.user
-    const {bid} = req.body
+    const {bid} = req.params
     if(!bid) throw new Error("Missing Input")
     const blog = await Blog.findById(bid)
     const alreadyDisliked = blog?.dislikes?.find(ele=>ele.toString() === _id)
@@ -71,19 +71,19 @@ const likeBlog = asyncHandle(async(req, res)=>{
 
 const dislikeBlog = asyncHandle(async(req, res)=>{
     const {_id} = req.user
-    const {bid} = req.body
+    const {bid} = req.params
     if(!bid) throw new Error("Missing Input")
     const blog = await Blog.findById(bid)
-    const alreadyDisliked = blog?.likes?.find(ele=>ele.toString() === _id)
-    if(alreadyDisliked){
+    const alreadyLiked = blog?.likes?.find(ele=>ele.toString() === _id)
+    if(alreadyLiked){
         const response  = await Blog.findByIdAndUpdate(bid,{$pull: {likes: _id}}, {new: true})
         return res.status(200).json({
             success: response ? true : false,
             mes: response 
         })
     }
-    const isLiked = blog?.dislikes?.find(ele=>ele.toString() === _id)
-    if(isLiked){
+    const isDisiked = blog?.dislikes?.find(ele=>ele.toString() === _id)
+    if(isDisiked){
         const response = await Blog.findByIdAndUpdate(bid,{$pull: {dislikes: _id}}, {new: true})
         return res.status(200).json({
             success: response ? true : false,
@@ -98,11 +98,33 @@ const dislikeBlog = asyncHandle(async(req, res)=>{
     }
 })
 
+const getBlog = asyncHandle(async(req, res)=>{
+    const { bid } = req.params
+    // $inc : tăng lên 1 đơn vị
+    const blog = await Blog.findByIdAndUpdate(bid, { $inc: {numberViewer: 1} }, {new: true}).populate('likes','firstname lastname').populate('dislikes','firstname lastname')
+    return res.status(200).json({
+        success: blog ? true : false,
+        mes: blog 
+    })
+})
+
+const uploadImageBlog = asyncHandle(async(req, res)=>{
+    const { bid } = req.params
+    if( !req.file ) throw new Error('Missing Input')
+    const response = await Blog.findByIdAndUpdate(bid, {image: req.file.path},{new: true})
+    return res.status(200).json({
+        success: response ? true : false,
+        mes: response ? "Upload is successfully" : "Something went wrong"
+    })
+})
+
 module.exports = {
     createBlog,
-    getBlog,
+    getBlogs,
     updateBlog,
     deleteBlog,
     likeBlog,
-    dislikeBlog
+    dislikeBlog,
+    getBlog,
+    uploadImageBlog
 }

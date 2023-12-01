@@ -4,18 +4,15 @@ const slugify = require('slugify')
 
 const createProduct = asyncHandle(async(req, res)=>{
     if(Object.keys(req.body).length === 0) throw new Error('Missing Input')
-    if(req.body && req.body.title) req.body.slug = slugify(req.body.title)
-    const {title} = req.body
-    const product = await Product.findOne({title})
-    if(product){
-        throw new Error('Product has existed!')
-    }else{
-        const newProduct = await Product.create(req.body)
-        return res.status(200).json({
-            success: newProduct ? true : false,
-            mes: newProduct ? "Add product is successfully" : "Something went wrong"
-        })
+    if(req.body && req.body.title){
+        let random = Math.floor(Math.random() * 1500);
+        req.body.slug = slugify(req.body.title) + '-' + random
     }
+    const newProduct = await Product.create(req.body)
+    return res.status(200).json({
+        success: newProduct ? true : false,
+        mes: newProduct ? "Add product is successfully" : "Something went wrong"
+        })
 })
 
 const getProduct = asyncHandle(async(req, res)=>{
@@ -42,6 +39,12 @@ const getProducts = asyncHandle(async(req, res)=>{
     if(queries?.title) formatedQueries.title = {$regex: queries.title, $options: 'i'}
     let queryCommand = Product.find(formatedQueries)
 
+
+    if (queries?.totalRatings) {
+        queryCommand = queryCommand.where({ totalRatings: queries.totalRatings });
+    }
+  
+
     //Sorting
     if(req.query.sort){
         const sortBy = req.query.sort.split(',').join(' ')
@@ -56,7 +59,6 @@ const getProducts = asyncHandle(async(req, res)=>{
     //Pagination
     const page = +req.query.page || 1
     const limit = +req.query.limit || process.env.LIMIT_PRODUCTS
-    console.log(limit)
     const skip = (page-1)*limit
     queryCommand.skip(skip).limit(limit)
 

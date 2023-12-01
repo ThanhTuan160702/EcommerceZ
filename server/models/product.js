@@ -4,7 +4,6 @@ var productSchema = new mongoose.Schema({
     title:{
         type:String,
         required:true,
-        unique: true,
         trim: true //Bỏ dấu cách
     },
     //Link sản phẩm ví dụ máy tính - may-tinh
@@ -15,7 +14,7 @@ var productSchema = new mongoose.Schema({
         lowercase: true
     },
     description:{
-        type:String,
+        type:Array,
         required:true
     },
     brand:{
@@ -27,8 +26,8 @@ var productSchema = new mongoose.Schema({
         required:true
     },
     category:{
-        type:mongoose.Types.ObjectId,
-        ref: 'Category'
+        type:String,
+        required:true
     },
     quantity:{
         type:Number,
@@ -42,8 +41,10 @@ var productSchema = new mongoose.Schema({
         type:Array
     },
     color:{
-        type:String,
-        enum: ['Black','Red','Grown']
+        type:String
+    },
+    Gb:{
+        type:String
     },
     ratings:[
         {

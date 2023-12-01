@@ -7,6 +7,10 @@ var productCategorySchema = new mongoose.Schema({
         required:true,
         unique:true,
         index:true,
+    },
+    brand:{
+        type:Array,
+        required:true
     }
 },{
     timestamps: true

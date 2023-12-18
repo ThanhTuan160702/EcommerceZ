@@ -16,9 +16,7 @@ var userSchema = new mongoose.Schema({
         required:true
     },
     mobile:{
-        type:String,
-        required:true,
-        unique:true,
+        type:String
     },
     password:{
         type:String,
@@ -52,18 +50,21 @@ var userSchema = new mongoose.Schema({
     },
     passwordResetExpire:{
         type: String
+    },
+    registerToken:{
+        type: String
     }
 },{
     timestamps: true
 });
 
-userSchema.pre('save', async function(next){
+/*userSchema.pre('save', async function(next){
     if(!this.isModified('password')){
         next()
     }
     const salt = bcrypt.genSaltSync(10)
     this.password = await bcrypt.hash(this.password, salt)
-})
+})*/
 
 userSchema.methods = {
     isCorrectPassword: async function(password){

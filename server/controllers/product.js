@@ -37,6 +37,7 @@ const getProducts = asyncHandle(async(req, res)=>{
 
     //Filtering
     if(queries?.title) formatedQueries.title = {$regex: queries.title, $options: 'i'}
+    if(queries?.category) formatedQueries.category = {$regex: queries.category, $options: 'i'}
     let queryCommand = Product.find(formatedQueries)
 
 
@@ -90,8 +91,8 @@ const updateProduct = asyncHandle(async(req, res)=>{
         if(req.body && req.body.title) req.body.slug = slugify(req.body.title)
         const updatedProduct = await Product.findByIdAndUpdate(pid,req.body,{new: true})
         return res.status(200).json({
-        success: updatedProduct ? true : false,
-        mes: updatedProduct ? updatedProduct : "Something went wrong"
+            success: updatedProduct ? true : false,
+            mes: updatedProduct ? updatedProduct : "Something went wrong"
     })
     }
     

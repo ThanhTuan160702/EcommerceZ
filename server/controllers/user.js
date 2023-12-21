@@ -32,6 +32,7 @@ const bcrypt = require('bcrypt')
 })*/
 
 const register = asyncHandle(async(req, res)=>{
+    const { email, password, firstname, lastname } = req.body
     if(!email || !password || !firstname || !lastname){
         return res.status(400).json({
             success: false,
@@ -51,7 +52,6 @@ const register = asyncHandle(async(req, res)=>{
             mes: "Password must have more than 6 characters!"
         }) 
     }
-    const { email, password, firstname, lastname } = req.body
     const userFinalRegister = await FinalRegister.findOne({email})
     if(userFinalRegister){
         return res.status(400).json({

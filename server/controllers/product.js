@@ -24,70 +24,65 @@ const getProduct = asyncHandle(async(req, res)=>{
     })
 })
 
-const getProducts = asyncHandle(async(req, res)=>{
-    const queries = {...req.query}
-    //Tách các trường đặc biệt ra khỏi query
-    const excludeFields = ['limit','sort','page','fields']
+const getProducts = asyncHandle(async(req, res) => {
+    const queries = { ...req.query }
+    // Tách các trường đặc biệt ra khỏi query
+    const excludeFields = ['limit', 'sort', 'page', 'fields']
     excludeFields.forEach(element => delete queries[element])
-    //Format lại các operators cho đúng cú pháp mongoose
+    // Format lại các operators cho đúng cú pháp mongoose
     let queryString = JSON.stringify(queries)
-    queryString = queryString.replace(/\b(gte|gt|lt|lte)\b/g, macthedEl => `$${macthedEl}`)
+    queryString = queryString.replace(/\b(gte|gt|lt|lte)\b/g, matchedEl => `$${matchedEl}`)
     let formatedQueries = JSON.parse(queryString)
     let colorQueryObject = {}
 
-
-    //Filtering
-    if(queries?.title) formatedQueries.title = {$regex: queries.title, $options: 'i'}
-    if(queries?.category) formatedQueries.category = {$regex: queries.category, $options: 'i'}
-    if(queries?.color){
+    // Filtering
+    if (queries?.title) formatedQueries.title = { $regex: queries.title, $options: 'i' }
+    if (queries?.category) formatedQueries.category = { $regex: queries.category, $options: 'i' }
+    if (queries?.color) {
         delete formatedQueries.color
         const colorArray = queries.color.split(',')
-        const colorQuery = colorArray.map(el => ({color: {$regex: el, $options: 'i'}}))
-        colorQueryObject = {$or: colorQuery}
+        const colorQuery = colorArray.map(el => ({ color: { $regex: el, $options: 'i' } }))
+        colorQueryObject = { $or: colorQuery }
     }
-    const q = {...colorQueryObject, ...formatedQueries}
-    let queryCommand = Product.find(q)
+    const q = { ...colorQueryObject, ...formatedQueries }
 
+    // Đếm số lượng documents trước khi biến đổi query
+    const counts = await Product.find(q).countDocuments();
+
+    // Tạo query command từ query biến đổi
+    let queryCommand = Product.find(q);
 
     if (queries?.totalRatings) {
         queryCommand = queryCommand.where({ totalRatings: queries.totalRatings });
     }
-  
 
-    //Sorting
-    if(req.query.sort){
+    // Sorting
+    if (req.query.sort) {
         const sortBy = req.query.sort.split(',').join(' ')
         queryCommand = queryCommand.sort(sortBy)
     }
 
-    //Fields limiting
-    if(req.query.fields){
+    // Fields limiting
+    if (req.query.fields) {
         const fields = req.query.fields.split(',').join(' ')
         queryCommand = queryCommand.select(fields)
     }
-    //Pagination
+
+    // Pagination
     const page = +req.query.page || 1
     const limit = +req.query.limit || process.env.LIMIT_PRODUCTS
-    const skip = (page-1)*limit
+    const skip = (page - 1) * limit
     queryCommand.skip(skip).limit(limit)
 
-    //Execute query
-    queryCommand.exec()
-    .then(response => {
-        const counts = Product.find(formatedQueries).countDocuments();
-        return Promise.all([response, counts]);
-    })
-    .then(([response, counts]) => {
-        return res.status(200).json({
-            success: response ? true : false,
-            mes: response ? response : "Something went wrong",
-            counts
-        });
-    })
-    .catch(err => {
-        throw new Error(err.message);
+    // Execute query
+    const response = await queryCommand.exec();
+
+    return res.status(200).json({
+        success: response ? true : false,
+        mes: response ? response : "Something went wrong",
+        counts
     });
-})
+});
 
 const updateProduct = asyncHandle(async(req, res)=>{
     const { pid } = req.params
